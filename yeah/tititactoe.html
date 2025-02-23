@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Online</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; }
+        .cell { width: 100px; height: 100px; font-size: 2em; display: flex; align-items: center; justify-content: center; border: 2px solid black; cursor: pointer; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <div id="menu">
+        <button onclick="startAI()">Play with AI</button>
+        <button onclick="startOnline()">Play Online</button>
+    </div>
+    
+    <div id="ai-menu" class="hidden">
+        <h2>Select Difficulty</h2>
+        <button onclick="startGame('easy')">Easy</button>
+        <button onclick="startGame('medium')">Medium</button>
+        <button onclick="startGame('hard')">Hard</button>
+    </div>
+    
+    <div id="online-menu" class="hidden">
+        <h2>Enter Game Code</h2>
+        <input type="text" id="gameCode" placeholder="Enter Code">
+        <button onclick="joinGame()">Join</button>
+    </div>
+    
+    <div id="game" class="hidden">
+        <h2 id="status">Your Turn</h2>
+        <div class="board" id="board"></div>
+    </div>
+    
+    <script>
+        const socket = io("http://localhost:3000");
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let player = "X";
+        let gameMode = "";
+        
+        function startAI() {
+            document.getElementById("menu").classList.add("hidden");
+            document.getElementById("ai-menu").classList.remove("hidden");
+            gameMode = "ai";
+        }
+
+        function startOnline() {
+            document.getElementById("menu").classList.add("hidden");
+            document.getElementById("online-menu").classList.remove("hidden");
+            gameMode = "online";
+        }
+
+        function startGame(difficulty) {
+            document.getElementById("ai-menu").classList.add("hidden");
+            document.getElementById("game").classList.remove("hidden");
+            generateBoard();
+        }
+
+        function joinGame() {
+            let code = document.getElementById("gameCode").value;
+            socket.emit("joinGame", code);
+            document.getElementById("online-menu").classList.add("hidden");
+            document.getElementById("game").classList.remove("hidden");
+            generateBoard();
+        }
+
+        function generateBoard() {
+            let boardElement = document.getElementById("board");
+            boardElement.innerHTML = "";
+            for (let i = 0; i < 9; i++) {
+                let cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.dataset.index = i;
+                cell.addEventListener("click", () => makeMove(i));
+                boardElement.appendChild(cell);
+            }
+        }
+
+        function makeMove(index) {
+            if (board[index] === "") {
+                board[index] = player;
+                document.querySelector(`[data-index='${index}']`).innerText = player;
+                player = player === "X" ? "O" : "X";
+                document.getElementById("status").innerText = `Player ${player}'s Turn`;
+                if (gameMode === "online") socket.emit("move", { index, player });
+            }
+        }
+    </script>
+</body>
+</html>
